@@ -1,6 +1,8 @@
 language: ruby
 cache:
-- rvm
+  bundler: true
+  directories:
+  - EnergyPlus
 os:
 - linux
 rvm:
