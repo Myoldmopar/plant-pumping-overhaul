@@ -1,4 +1,6 @@
 language: ruby
+cache:
+- rvm
 os:
 - linux
 rvm:
@@ -10,4 +12,4 @@ env:
 install:
 - bundle install --path=vendor/bundle
 script:
-- script: "bundle exec $CHECK"
+- "bundle exec $CHECK"
