@@ -1,7 +1,7 @@
 AllCops:
   Include:
     - 'lib/**/*.rb'
-    - 'test/**/*.rb'
+    - 'tests/**/*.rb'
   Exclude:
     - '**/*.erb'
     - 'vendor/**/*'

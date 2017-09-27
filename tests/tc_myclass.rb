@@ -1,7 +1,7 @@
 require_relative '../lib/myclass'
 require 'test/unit'
 
-# This unit test does simple testing
+# This unit tests does simple testing
 class TestMyClass < Test::Unit::TestCase
   def test_simple
     m = MyClass.new
