@@ -5,3 +5,5 @@ AllCops:
   Exclude:
     - '**/*.erb'
     - 'vendor/**/*'
+    - 'EnergyPlus/**/*'
+    - 'docs/**/*'
