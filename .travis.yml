@@ -1,0 +1,13 @@
+language: ruby
+os:
+- linux
+rvm:
+- 2.3.3
+env:
+  matrix:
+  - CHECK='ruby test/tc_all_tests.rb'
+  - CHECK='rubocop -D'
+install:
+- bundle install --path=vendor/bundle
+script:
+- script: "bundle exec $CHECK"
