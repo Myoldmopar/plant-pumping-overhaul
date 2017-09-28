@@ -1,34 +1,39 @@
+# Defines different pump types
 module PumpTypes
-	ConstantSpeed = 0
-	VariableSpeed = 1
+  CONSTANT_SPEED = 0
+  VARIABLE_SPEED = 1
 end
 
+# Defines different common pipe types
 module CommonPipeTypes
-	NoCommonPipe = 0
-	CommonPipe   = 1
-	Controlled   = 2
+  NO_COMMON_PIPE = 0
+  COMMON_PIPE = 1
+  CONTROLLED = 2
 end
 
+# Defines different load distribution strategies
 module LoadDistribution
-	Uniform    = 0
-	Sequential = 1
+  UNIFORM = 0
+  SEQUENTIAL = 1
 end
 
+# Defines different pump placement options
 module PumpPlacement
-	LoopPump   = 0
-	BranchPump = 1
+  LOOP_PUMP = 0
+  BRANCH_PUMP = 1
 end
 
+# Defines different schedule strategies
 module ScheduleType
-	Constant          = 0
-	OnDuringDay       = 1
-	OnDuringNight     = 2
-	OnDuringMorning   = 3
-	OnDuringAfternoon = 4
+  CONSTANT = 0
+  ON_DURING_DAY = 1
+  ON_DURING_NIGHT = 2
+  ON_DURING_MORNING = 3
+  ON_DURING_AFTERNOON = 4
 end
 
+# Defines different pump control types
 module PumpControl
-	Continuous   = 0
-	Intermittent = 1
+  CONTINUOUS = 0
+  INTERMITTENT = 1
 end
-

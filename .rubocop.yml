@@ -7,3 +7,12 @@ AllCops:
     - 'vendor/**/*'
     - 'EnergyPlus/**/*'
     - 'docs/**/*'
+    - '_build'
+
+Metrics/LineLength:
+  Enabled: false
+  Max: 120
+
+Metrics/MethodLength:
+  CountComments: false  # count full line comments?
+  Max: 20
