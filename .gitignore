@@ -1,3 +1,6 @@
+# some of my filepaths to ignore
+_build
+
 .idea
 Gemfile.lock
 
