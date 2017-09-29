@@ -7,16 +7,14 @@ rvm:
 - 2.3.3
 env:
   matrix:
-  - CHECK='ruby tests/ts_all_tests.rb'
-  - CHECK='rubocop -D'
+  - CHECK='tests'
+  - CHECK='rubocop'
 install:
 - bundle install --path=vendor/bundle
 - sudo apt-get install -y --no-install-recommends gnuplot texlive-fonts-recommended
   texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
 script:
-- bundle exec $CHECK
-after_success:
-- [ "a${CHECK}" = "aruby tests/ts_all_tests.rb" ] && make -C report pdf
+- ./runner.sh $CHECK
 deploy:
   provider: releases
   api_key:
