@@ -14,12 +14,11 @@ Metrics/LineLength:
   Enabled: false
   Max: 120
 
-# these need to be re-enabled and the code cleaned up
-
 Metrics/MethodLength:
-  Enabled: false
   CountComments: false  # count full line comments?
-  Max: 25
+  Max: 35
+
+# these need to be re-enabled and the code cleaned up
 
 Metrics/AbcSize:
   Enabled: false
