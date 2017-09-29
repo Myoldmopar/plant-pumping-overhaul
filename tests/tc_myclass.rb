@@ -14,7 +14,9 @@ class TestMyClass < Test::Unit::TestCase
     Gnuplot.open do |gp|
       Gnuplot::Plot.new(gp) do |plot|
         plot.terminal 'png'
-        plot.output File.expand_path('/tmp/test.png', __FILE__)
+        this_script_dir = File.dirname(__FILE__)
+        plot_file_path = File.join(this_script_dir, '..', 'report', 'media', 'plot.png')
+        plot.output File.expand_path(plot_file_path, __FILE__)
         plot.xrange '[-10:10]'
         plot.title  'Sin Wave Example'
         plot.ylabel 'x'
