@@ -1,8 +1,6 @@
 language: ruby
 cache:
   bundler: true
-  directories:
-  - EnergyPlus
 os:
 - linux
 rvm:
@@ -13,5 +11,6 @@ env:
   - CHECK='rubocop -D'
 install:
 - bundle install --path=vendor/bundle
+- sudo apt-get install gnuplot -y
 script:
 - "bundle exec $CHECK"

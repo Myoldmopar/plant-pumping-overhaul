@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'openstudio'
+require 'sqlite3'
 
 # def query_a_model(run_folder, variable_names, row_num = -1)
 #   csv_file = "#{run_folder}/ModelToIdf/EnergyPlus-0/eplusout.csv"
@@ -25,6 +26,50 @@ require 'openstudio'
 #   end
 #   var_values
 # end
+
+class DatabaseInfo
+  def initialize(variable_name, key_name, data_dict_index)
+    @variable_name = variable_name
+    @key_name = key_name
+    @data_dict_index = data_dict_index
+  end
+  attr_reader :variable_name
+  attr_reader :key_name
+  attr_reader :data_dict_index
+end
+
+def query_a_model(run_folder, variable_names)
+  sql_file = "#{run_folder}/run/eplusout.sql"
+  begin
+    db = SQLite3::Database.open sql_file
+    stm = db.prepare 'SELECT * FROM ReportDataDictionary'
+    rs = stm.execute
+    db_info = []
+    rs.each do |row|
+      if variable_names.include? row[6]
+        db_info.push(DatabaseInfo.new(row[6], row[5], row[0]))
+      end
+    end
+    time_series_data = {}
+    db_info.each do |variable|
+      time_series_name = "#{variable.variable_name}:#{variable.key_name}"
+      stm_two = db.prepare "SELECT * FROM ReportData WHERE ReportDataDictionaryIndex == #{variable.data_dict_index}"
+      rs_two = stm_two.execute
+      time_series = []
+      rs_two.each do |row|
+        time_series.push(row[3])
+      end
+      time_series_data[time_series_name] = time_series
+      stm_two.close
+    end
+  rescue SQLite3::Exception => e
+    puts 'Exception occurred'
+    puts e
+  ensure
+    stm.close if stm
+    db.close if db
+  end
+end
 
 def chart_a_column(run_folder, variable_names, _output_file_name)
   csv_file = "#{run_folder}/ModelToIdf/EnergyPlus-0/eplusout.csv"

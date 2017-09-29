@@ -2,7 +2,7 @@ require 'openstudio'
 require 'json'
 require 'pathname'
 require_relative 'enums.rb'
-require_relative 'run.rb'
+require_relative 'post_processing.rb'
 require_relative 'config.rb'
 
 # This class captures the logic required to build out plant models
@@ -214,7 +214,7 @@ class ModelBuilder
     # run_a_model(conf[:output_file_name], "/home/edwin/Projects/energyplus/repos/1eplus/weather/USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw", parent_folder)
 
     # grab some result
-    # puts query_a_model(parent_folder, ['Boiler Heating Rate'], 40)
+    query_a_model(parent_folder, ['Boiler Heating Rate'])
     # chart_a_column(parent_folder, ['BOILER HOT WATER 1:Boiler Mass Flow Rate'], 'massflowrate.png')
   end
 
@@ -250,7 +250,7 @@ class ModelBuilder
 end
 # rubocop:enable Metrics/ClassLength
 
-def make_a_plant_model(conf)
+def make_and_run_plant_model(conf)
   m = ModelBuilder.new(conf)
   m.make_full_model
   m.save_and_run_model
