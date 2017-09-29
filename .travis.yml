@@ -15,7 +15,8 @@ install:
   texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
 script:
 - bundle exec $CHECK
-- make -C report pdf
+after_success:
+- [ "a${CHECK}" = "aruby tests/ts_all_tests.rb" ] && make -C report pdf
 deploy:
   provider: releases
   api_key:
