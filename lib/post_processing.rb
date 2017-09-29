@@ -27,6 +27,7 @@ require 'sqlite3'
 #   var_values
 # end
 
+# Small structure to capture database output variable data
 class DatabaseInfo
   def initialize(variable_name, key_name, data_dict_index)
     @variable_name = variable_name
