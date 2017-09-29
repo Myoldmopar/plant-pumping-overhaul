@@ -95,17 +95,17 @@ class ModelBuilder
       @secondary_pump.setRatedFlowRate(@conf[:secondary_pump_vol_flow])
       @secondary_pump.setName('Secondary Pump 1')
     end
-    if @conf[:secondary_pump_location] == PumpPlacement::BRANCH_PUMP
-      if @conf[:secondary_pump_2_type] == PumpTypes::CONSTANT_SPEED
-        @secondary_pump_two = OpenStudio::Model::PumpConstantSpeed.new(@model)
-      elsif @conf[:secondary_pump_2_type] == PumpTypes::VARIABLE_SPEED
-        @secondary_pump_two = OpenStudio::Model::PumpVariableSpeed.new(@model)
-      else
-        raise Exception("Invalid secondary_pump_2_type key in configuration = #{@conf[:secondary_pump_2_type]}")
-      end
-      @secondary_pump_two.setRatedFlowRate(@conf[:secondary_pump_2_vol_flow])
-      @secondary_pump_two.setName('Secondary Pump 2')
+    # return early if secondary pump is loop
+    return unless @conf[:secondary_pump_location] == PumpPlacement::BRANCH_PUMP
+    if @conf[:secondary_pump_2_type] == PumpTypes::CONSTANT_SPEED
+      @secondary_pump_two = OpenStudio::Model::PumpConstantSpeed.new(@model)
+    elsif @conf[:secondary_pump_2_type] == PumpTypes::VARIABLE_SPEED
+      @secondary_pump_two = OpenStudio::Model::PumpVariableSpeed.new(@model)
+    else
+      raise Exception("Invalid secondary_pump_2_type key in configuration = #{@conf[:secondary_pump_2_type]}")
     end
+    @secondary_pump_two.setRatedFlowRate(@conf[:secondary_pump_2_vol_flow])
+    @secondary_pump_two.setName('Secondary Pump 2')
   end
 
   def add_primary_equipment
