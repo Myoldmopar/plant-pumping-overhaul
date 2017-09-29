@@ -6,9 +6,9 @@ require_relative 'run.rb'
 require_relative 'config.rb'
 
 def make_a_load_profile_schedule(model, peakval, profile_num, load_or_flow, schedule_type)
-  sch_ruleset = OpenStudio::Model::ScheduleRuleset.new(model)
-  sch_ruleset.setName("Load Profile #{profile_num} #{load_or_flow} Schedule")
-  week_day = sch_ruleset.defaultDaySchedule
+  sch_rule_set = OpenStudio::Model::ScheduleRuleset.new(model)
+  sch_rule_set.setName("Load Profile #{profile_num} #{load_or_flow} Schedule")
+  week_day = sch_rule_set.defaultDaySchedule
   week_day.setName("Load Profile #{profile_num} #{load_or_flow} Day Schedule")
   case schedule_type
   when ScheduleType::CONSTANT
@@ -30,7 +30,7 @@ def make_a_load_profile_schedule(model, peakval, profile_num, load_or_flow, sche
     week_day.addValue(OpenStudio::Time.new(0, 17, 0, 0), peakval)
     week_day.addValue(OpenStudio::Time.new(0, 24, 0, 0), 0)
   end
-  sch_ruleset
+  sch_rule_set
 end
 
 def make_a_plant_model(conf)

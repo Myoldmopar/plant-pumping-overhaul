@@ -2,6 +2,7 @@ AllCops:
   Include:
     - 'lib/**/*.rb'
     - 'tests/**/*.rb'
+    - '**/Gemfile'
   Exclude:
     - '**/*.erb'
     - 'vendor/**/*'
@@ -13,6 +14,18 @@ Metrics/LineLength:
   Enabled: false
   Max: 120
 
+# these need to be re-enabled and the code cleaned up
+
 Metrics/MethodLength:
+  Enabled: false
   CountComments: false  # count full line comments?
-  Max: 20
+  Max: 25
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
