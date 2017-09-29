@@ -11,6 +11,17 @@ env:
   - CHECK='rubocop -D'
 install:
 - bundle install --path=vendor/bundle
-- sudo apt-get install -y --no-install-recommends gnuplot texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
+- sudo apt-get install -y --no-install-recommends gnuplot texlive-fonts-recommended
+  texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
 script:
-- "bundle exec $CHECK"
+- bundle exec $CHECK
+- make -C report pdf
+deploy:
+  provider: releases
+  api_key:
+    secure: HxCzfJhc+FwHHNXv3shJdkKgY2vS4Zu09IcN9MlpmDxBsNcLfidMUyX+txQUL3z59meDlT9FfwKFiOeW5juNgxhVFLdqQf6LgL1LxsuKAZ8iNQSgRXmjwphLslEWPNVYg4Xcxys7vbVMYq73c9UMQmn2iNMR6mWS+EEXBVpSOGOMSebybMSnYEp/ji6rrN7Lvv67u5fruCX83Up+elVlLJkAnje5E0jTZpJY0G3kuSu3ipzTmnZZv7G4QoPFQ8QoWjlVe/8wRxzgNYWGNOqkYMIX6KCH3mOFuJkQhEBohq8efx5740xZ2/wEDGf3447qIdzVBC6o7AecsXm0WBYP1333GTB0BcMPxiKnvwW+PVkxTjSyeO29AwHMTelFyIR6Lv+DrjtgFvtDd+2kjUrYD/f0lL2hfznH2th4JpqvSCBkv2G0My66ZKIh2ZsBthAcxpKEubofgPo2WqRZnPZvFhj1o+q89mqJh5uAGyDpYaYFIrtOQbo3vEdFFi8iiMspobUkwr/I7NBjLuch1FhZmyr2elv10MXIumNoIw6LA1j2wpV4s8NzKywcjZVa7BZhnip0IXthXdfeSobTc6OoWcNmM4xKqInbuf2J3yrHl1+phmMO33vW355yMokF7e9/VmcU4o9GDCnDBItA8hCxon1pB+D6qXo6dbHJTEbQd9g=
+  file: report/main.pdf
+  skip_cleanup: true
+  on:
+    repo: Myoldmopar/plant-pumping-overhaul
+    tags: true
