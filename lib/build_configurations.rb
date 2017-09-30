@@ -44,7 +44,7 @@ const_pri_loop_no_sec_uniform = default_configuration.merge(
   output_file_name: "./#{BUILD_DIRECTORY}/01/01-const_pri_loop_no_sec_uniform.osm"
 )
 make_and_run_plant_model(const_pri_loop_no_sec_uniform)
-exit(0)
+
 const_pri_loop_no_sec_sequent = default_configuration.merge(
   load_distribution: LoadDistribution::SEQUENTIAL,
   output_file_name: "./#{BUILD_DIRECTORY}/02/02-const_pri_loop_no_sec_sequent.osm"
@@ -63,7 +63,7 @@ varia_pri_loop_no_sec_sequent = default_configuration.merge(
   output_file_name: "./#{BUILD_DIRECTORY}/04/04-varia_pri_loop_no_sec_sequent.osm"
 )
 make_and_run_plant_model(varia_pri_loop_no_sec_sequent)
-
+exit(0)
 const_pri_bran_no_sec_uniform = default_configuration.merge(
   primary_pump_location: PumpPlacement::BRANCH_PUMP,
   primary_pump_vol_flow: 0.0009,

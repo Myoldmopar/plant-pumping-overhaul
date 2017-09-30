@@ -27,4 +27,3 @@ Documentation is hosted on [ReadTheDocs](http://plant-pumping-overhaul.readthedo
 ## Testing [![Build Status](https://travis-ci.org/Myoldmopar/plant-pumping-overhaul.svg?branch=master)](https://travis-ci.org/Myoldmopar/plant-pumping-overhaul)
 
 The source is tested using the Ruby test/unit framework.  To execute all the unit tests, just execute the main test suite file (which wraps all the other unit tests): `bundle exec ruby tests/ts_all_tests.rb`.  The tests are also executed by [Travis CI](https://travis-ci.org/Myoldmopar/plant-pumping-overhaul).
-
