@@ -8,7 +8,7 @@ elif [ $1 == "rubocop" ]; then
   exit $?
 elif [ $1 == "build" ]; then
   wget https://github.com/NREL/OpenStudio/releases/download/v2.2.2/OpenStudio-2.2.2.ebdeaa44f8-Linux.deb
-  sudo gdebi OpenStudio-2.2.2.ebdeaa44f8-Linux.deb
+  sudo gdebi -n OpenStudio-2.2.2.ebdeaa44f8-Linux.deb
   bundle exec lib/build_configurations.rb
   exit $?
 fi
