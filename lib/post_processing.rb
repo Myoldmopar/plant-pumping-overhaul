@@ -16,6 +16,7 @@ class DatabaseInfo
   attr_reader :data_dict_index
 end
 
+# Small structure to capture a single time/datum point
 class SingleTimePointData
   def initialize(time, datum)
     @time = time
@@ -47,7 +48,7 @@ def query_a_model(run_folder, variable_names)
       # need to actually look in the Time table to get the correct time, for now I'm just using an index
       cur_time = 0
       rs_two.each do |row|
-        cur_time = cur_time + 1
+        cur_time += 1
         time_series.push(SingleTimePointData.new(cur_time, row[3]))
       end
       time_series_data[time_series_name] = time_series
@@ -77,8 +78,8 @@ def plot_results(run_key, time_series_data)
 
       temp_data = []
       time_series_data.each do |time_series_name, time_series|
-        x = time_series.collect{ |v| v.time }
-        y = time_series.collect{ |v| v.datum }
+        x = time_series.collect(&:time)
+        y = time_series.collect(&:datum)
         ds = Gnuplot::DataSet.new([x, y]) do |this_ds|
           this_ds.with = 'lines'
           this_ds.title = time_series_name
