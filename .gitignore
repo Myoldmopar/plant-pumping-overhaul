@@ -1,6 +1,7 @@
 # some of my filepaths to ignore
 _build
 report/media
+EnergyPlus-8.8.0-*
 
 # latex output
 *.aux
