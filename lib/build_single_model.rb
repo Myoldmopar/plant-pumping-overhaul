@@ -3,7 +3,6 @@ require 'json'
 require 'pathname'
 require_relative 'enums.rb'
 require_relative 'post_processing.rb'
-require_relative 'config.rb'
 
 # This class captures the logic required to build out plant models
 # rubocop:disable Metrics/ClassLength
@@ -175,7 +174,9 @@ class ModelBuilder
 
   def enable_design_day_runs
     # now we have a few things to fine tune to make the idf runnable
-    ddy_path = OpenStudio::Path.new(DDY_FILE_PATH)
+    cur_directory = File.dirname(__FILE__)
+    ddy_file_path = File.join(cur_directory, '..', 'support_files', 'USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.ddy')
+    ddy_path = OpenStudio::Path.new(ddy_file_path)
     ddy_idf = OpenStudio::IdfFile.load(ddy_path, 'EnergyPlus'.to_IddFileType).get
     ddy_workspace = OpenStudio::Workspace.new(ddy_idf)
     reverse_translator = OpenStudio::EnergyPlus::ReverseTranslator.new
@@ -203,7 +204,9 @@ class ModelBuilder
     @model.save(@conf[:output_file_name], true)
 
     # also create a workflow file
-    workflow = { 'seed_file': Pathname.new(@conf[:output_file_name]).realpath.to_s, 'weather_file': EPW_FILE_PATH }
+    cur_directory = File.dirname(__FILE__)
+    epw_file_path = File.join(cur_directory, '..', 'support_files', 'USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw')
+    workflow = { 'seed_file': Pathname.new(@conf[:output_file_name]).realpath.to_s, 'weather_file': epw_file_path }
     workflow_file_path = File.join(parent_folder, 'workflow.osw')
     File.open(workflow_file_path, 'w') do |f|
       f.write(JSON.pretty_generate(workflow))
