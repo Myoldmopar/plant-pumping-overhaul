@@ -213,7 +213,8 @@ class ModelBuilder
     end
 
     # run it!
-    `ENERGYPLUS_EXE_PATH=/tmp/ep88/EnergyPlus-8-8-0/energyplus openstudio run -w #{workflow_file_path}`
+    eplus_file_path = File.join(cur_directory, '..', 'EnergyPlus-8.8.0-7c3bbe4830-Linux-x86_64', 'EnergyPlus-8-8-0', 'energyplus')
+    `ENERGYPLUS_EXE_PATH=#{eplus_file_path} openstudio run -w #{workflow_file_path}`
     # run_a_model(conf[:output_file_name], "/home/edwin/Projects/energyplus/repos/1eplus/weather/USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw", parent_folder)
 
     # grab some result
