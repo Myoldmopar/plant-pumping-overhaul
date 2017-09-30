@@ -25,3 +25,4 @@ deploy:
   on:
     repo: Myoldmopar/plant-pumping-overhaul
     tags: true
+    condition: CHECK = build
