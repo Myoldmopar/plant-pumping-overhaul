@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'openstudio'
+require '/usr/Ruby/openstudio'
 require 'sqlite3'
 
 # def query_a_model(run_folder, variable_names, row_num = -1)

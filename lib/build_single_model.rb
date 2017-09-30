@@ -1,4 +1,4 @@
-require 'openstudio'
+require '/usr/Ruby/openstudio'
 require 'json'
 require 'pathname'
 require_relative 'enums.rb'
