@@ -11,6 +11,7 @@ class DatabaseInfo
     @key_name = key_name
     @data_dict_index = data_dict_index
   end
+
   attr_reader :variable_name
   attr_reader :key_name
   attr_reader :data_dict_index
@@ -22,6 +23,7 @@ class SingleTimePointData
     @time = time
     @datum = datum
   end
+
   attr_reader :time
   attr_reader :datum
 end
@@ -72,7 +74,7 @@ def plot_results(run_key, time_series_data)
       plot_file_path = File.join(this_script_dir, '..', 'report', 'media', "plot#{run_key}.png")
       plot.output File.expand_path(plot_file_path, __FILE__)
       # plot.xrange '[-10:10]'
-      plot.title  "Run # #{run_key}"
+      plot.title "Run # #{run_key}"
       plot.ylabel 'x'
       plot.xlabel 'Boiler Heating Rate'
 
@@ -91,4 +93,11 @@ def plot_results(run_key, time_series_data)
       plot.data = temp_data
     end
   end
+end
+
+def write_description(run_folder, description)
+  run_key = run_folder.split('/').last
+  this_script_dir = File.dirname(__FILE__)
+  description_file_path = File.join(this_script_dir, '..', 'report', 'media', "description#{run_key}.tex")
+  File.open(description_file_path, 'w') { |file| file.write(description) }
 end

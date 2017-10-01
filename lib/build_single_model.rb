@@ -219,6 +219,7 @@ class ModelBuilder
 
     # grab some result
     query_a_model(parent_folder, ['Boiler Heating Rate'])
+    write_description(parent_folder, @conf[:description])
     # chart_a_column(parent_folder, ['BOILER HOT WATER 1:Boiler Mass Flow Rate'], 'massflowrate.png')
   end
 

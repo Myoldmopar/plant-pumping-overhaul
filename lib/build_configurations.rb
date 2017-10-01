@@ -36,12 +36,16 @@ default_configuration = {
   load_profile_sched: ScheduleType::ON_DURING_DAY,
   load_profile_2_vol_flow: 0.001,
   load_profile_2_load: 4500,
-  load_profile_2_sched: ScheduleType::ON_DURING_AFTERNOON
+  load_profile_2_sched: ScheduleType::ON_DURING_AFTERNOON,
+  description: 'Undefined'
   #	output_file_name: "/tmp/testplantloop.osm"
 }
 
 const_pri_loop_no_sec_uniform = default_configuration.merge(
-  output_file_name: "./#{BUILD_DIRECTORY}/01/01-const_pri_loop_no_sec_uniform.osm"
+  output_file_name: "./#{BUILD_DIRECTORY}/01/01-const_pri_loop_no_sec_uniform.osm",
+  description: 'This base model uses a constant speed loop pump on the supply side, \
+               two boilers on the supply side, with load dispatched uniformly, \
+               two load profiles on the demand side, with one loaded during the afternoon, and one all day'
 )
 make_and_run_plant_model(const_pri_loop_no_sec_uniform)
 
