@@ -6,7 +6,7 @@ cache:
 os:
 - linux
 rvm:
-- 2.2.0
+- 2.2.7
 env:
   matrix:
   - CHECK='tests'
@@ -14,6 +14,7 @@ env:
   - CHECK='build'
 install:
 - bundle install --path=vendor/bundle
+- sudo apt-get install -y --no-install-recommends gnuplot texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended gdebi
 script:
 - ./runner.sh $CHECK
 deploy:

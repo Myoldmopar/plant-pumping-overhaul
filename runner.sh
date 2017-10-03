@@ -11,7 +11,6 @@ elif [ $1 == "rubocop" ]; then
   bundle exec rubocop -D
   exit $?
 elif [ $1 == "build" ]; then
-  sudo apt-get install -y --no-install-recommends gnuplot texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended gdebi
   if [ ! -e "${INSTALLDIR}/${OSDEBIAN}" ]; then
     wget -O "${INSTALLDIR}/${OSDEBIAN}" "https://github.com/NREL/OpenStudio/releases/download/v2.2.2/${OSDEBIAN}"
   fi
