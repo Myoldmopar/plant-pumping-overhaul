@@ -1,14 +1,471 @@
 \documentclass{report}
 \usepackage{graphicx}
+\usepackage[margin=1in]{geometry}
+\usepackage{subfigure}
+\usepackage{hyperref}
+
+\title{Plant Pumping Overhaul}
+\author{Edwin Lee}
+\date{\today}
 
 \begin{document}
-\section{Case 1}
-\input{media/description01}
-\includegraphics[width=\textwidth]{media/plot01.png}
-\input{media/description02}
-\includegraphics[width=\textwidth]{media/plot02.png}
-\input{media/description03}
-\includegraphics[width=\textwidth]{media/plot03.png}
-\input{media/description04}
-\includegraphics[width=\textwidth]{media/plot04.png}
+
+  \maketitle
+
+  \tableofcontents
+
+  \chapter{Introduction}\label{ch:intro}
+
+    For FY18, NREL was tasked with completing an overhaul of plant pumping systems.
+    This is primarily focused on the constant speed branch pumping capabilities, which have known issues.
+    This task will be divided into the following steps:
+
+    \begin{itemize}
+      \item Setup automated testing framework
+      \item Establish requirements
+      \item Design and complete initial refactoring work (no-diffs)
+      \item Design and complete modifications to accomplish requirements (probably no-diffs in existing files, but additional tests to be added)
+    \end{itemize}
+
+  \chapter{Current Results}\label{ch:current}
+
+    In this chapter, results of the current EnergyPlus plant simulation will be demonstrated.
+    The results are generated from a locally installed version of EnergyPlus-8.8.0-7c3bbe4830.
+    If a different version of EnergyPlus is used to generate the plots, the descriptions and narrative given here may no longer match the plots.
+    The initial examples are simple models but build toward more exotic examples in later configurations.
+
+    In all examples, the plant loop consists of:
+    \begin{itemize}
+      \item Two load profiles on the demand side, one per parallel branch
+      \item Two variable flow boilers on the supply side, one per parallel branch
+      \item Some form of load profile scheduling:
+      \begin{description}
+        \item [Constant] On at peak value all the time
+        \item [On During Day] On at peak value during the daytime (work) hours, and off during the night
+        \item [On During Night] Off during the daytime (work) hours, and on at peak value during the night
+        \item [On During Afternoon] On during the afternoon hours, off otherwise
+        \item [On During Morning] On during the morning hours, off otherwise
+      \end{description}
+      \item Some form of piping network, with either a single path (no common pipe), or a common pipe (uncontrolled or controlled)
+      \item Some form of pumping on each loop side
+      \begin{itemize}
+        \item With no common pipe, the demand side will have no pumping
+        \item The pumping may be constant speed or variable speed (which is more like constant flow or variable flow)
+        \item The loop side may have a single pump on the inlet branch, or branch pumps ahead of each piece of equipment
+      \end{itemize}
+      \item Other miscellaneous loop configuration and control properties can be altered:
+      \begin{itemize}
+        \item Loop temperature set points
+        \item Peak flow rates and loads for load profiles
+        \item Design flow rates and heating capacities for boilers
+        \item Pump control strategies: intermittent or continuous
+      \end{itemize}
+    \end{itemize}
+
+    Section~\ref{sec:current-01} describes the default, initial, case in detail.
+    The cases that follow describe the deviation from this default case.
+
+    \section{Case 1: Base Case}\label{sec:current-01}
+
+      This base model has no common pipe.
+      This case uses a constant speed loop pump on the supply side, under intermittent control, with a rated flow rate of 0.0018 kg/s.
+      The two boilers on the supply side provide heating, with load dispatched uniformly, each with a rated capacity of 5000 W.
+      The two load profiles on the demand side impose a heating demand on the loop, with one loaded during the afternoon, and one all day.
+      The load profiles each have a peak flow request of 0.001 kg/s and a peak demand of 4500 W.
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 1: Boiler Heating Rate]{
+          \includegraphics[width=0.47\textwidth]{media/plot01_0.png}
+          \label{fig:current-01-boilerrate}
+        }
+        ~
+        \subfigure[Case 1: Boiler Flow Rate]{
+          \includegraphics[width=0.47\textwidth]{media/plot01_1.png}
+          \label{fig:current-01-boilerflow}
+        }
+        \caption{Case 1 Results}
+      \end{figure*}
+
+      The boiler heating rate is shown for this case in Figure~\ref{fig:current-01-boilerrate}.
+      In the early morning, there is no load, so the boilers do not run.
+      In the late morning, one load profile comes online, taking heat from the loop, at a rate of approximately 4500 W.
+      Because the boilers are loaded uniformly, both boilers come online and operate at a rate of approximately 2100 W.
+      The remainder of the demand is supplied through the heat gain from the pumps.
+      At midday, the second load profile comes online, and both boilers ramp up to approximately 4300 W.
+      And of course, in the evening, when the load profiles go offline, the boilers also go offline.
+
+      The boiler flow rate is shown for this case in Figure~\ref{fig:current-01-boilerflow}.
+      Even though the boilers are variable flow, the pump is constant, so the pump is (unless there is a flow restriction) either going to be on full, or off, nothing in between.
+      Since the boilers are dispatched uniformly, they both turn on so each divides the full constant pump flow between themselves.
+
+    \section{Case 2: Sequential Load Dispatch}\label{sec:current-02}
+
+      This model builds on the base model by changing the load dispatch to the boilers to be sequential.
+      The expected result being that boiler 1 will supply heating alone until it reaches maximum capacity, then boiler 2 activates to supply heating.
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 2: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot02_0.png}
+        \label{fig:current-02-boilerrate}
+        }
+        ~
+        \subfigure[Case 2: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot02_1.png}
+        \label{fig:current-02-boilerflow}
+        }
+        \caption{Case 2 Results}
+      \end{figure*}
+
+      The boiler heating rate for this case is shown in Figure~\ref{fig:current-02-boilerrate}.
+      In the late morning, when the first load profile comes online, boiler 1 turns on to meet the approximately 4100 W heating demand (with the pump heat supplying the remainder).
+      At midday, when the second load profile comes online, boiler 1 ramps to full capacity, and begins meeting 5000 W of heating demand.
+      The remainder is sequentially delivered to the second boiler, which meets the approximately 3600 W of remaining demand.
+
+      The boiler flow rate is shown for this case in Figure~\ref{fig:current-02-boilerflow}.
+      During the morning hours, when only one boiler is running, the single boiler takes the full constant pump flow, and so operates at 1.8 kg/s.
+      Note that boiler 2 comes on briefly during a pickup load period, but goes off after one time step - this is common for many of these test cases.
+      In the afternoon, when the load must be dispatched to both boilers to meet demand, the boilers split the flow, proportional to the amount of load each boiler is dispatched.
+
+    \section{Case 3: Variable Speed Pumping}\label{sec:current-03}
+
+      This model builds on the base model by using a variable speed pump.
+      The boilers are, as in the base case, dispatched uniformly.
+      In this case, the boilers variable nature will be exercised by matching up with a variable speed plant pumping system.
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 3: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot03_0.png}
+        \label{fig:current-03-boilerrate}
+        }
+        ~
+        \subfigure[Case 3: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot03_1.png}
+        \label{fig:current-03-boilerflow}
+        }
+        \caption{Case 3 Results}
+      \end{figure*}
+
+      The boiler heating rate for this case is shown in Figure~\ref{fig:current-03-boilerrate}.
+      This has essentially the same response as the base case, as the load is dispatched fully and uniformly between the two boilers.
+
+      The boiler flow rate for this case is shown in Figure~\ref{fig:current-03-boilerflow}.
+      In the base case, the pump rate at full design flow throughout the day.
+      In this case, in the morning when the load is lower, the boilers both operate by requesting a reduced flow rate.
+      The pump responds by throttling down to this reduced overall flow rate.
+
+    \section{Case 4: Sequential Load Dispatch + Variable Speed Pumping}\label{sec:current-04}
+
+      This model combines the variations from cases 2 and 3, with load being dispatched sequentially to each boiler and variable speed pumping.
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 4: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot04_0.png}
+        \label{fig:current-04-boilerrate}
+        }
+        ~
+        \subfigure[Case 4: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot04_1.png}
+        \label{fig:current-04-boilerflow}
+        }
+        \caption{Case 4 Results}
+      \end{figure*}
+
+      The boiler heating rate for this case is shown in Figure~\ref{fig:current-04-boilerrate}, and is essentially equal to case 2, as the change to variable speed does not affect the load distribution in this case.
+      The boiler flow rate for this case is shown in Figure~\ref{fig:current-04-boilerflow}.
+      In case 2, with a constant speed pump, even though the load was dispatched sequentially, when boiler 1 came online to meet demand, it was forced to run at full pump design flow.
+      In this case, with the variable speed pump, the boiler can meet the demand at a lower flow rate.
+      In the afternoon, when both boilers come online and the loop is approaching maximum capacity, the pump runs at full flow, and the flow is distributed to each boiler sequentially, proportional to how much demand each boiler is meeting.
+
+    \section{Case 5}\label{sec:current-05}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 5: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot05_0.png}
+        \label{fig:current-05-boilerrate}
+        }
+        ~
+        \subfigure[Case 5: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot05_1.png}
+        \label{fig:current-05-boilerflow}
+        }
+        \caption{Case 5 Results}
+      \end{figure*}
+
+    \section{Case 6}\label{sec:current-06}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 6: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot06_0.png}
+        \label{fig:current-06-boilerrate}
+        }
+        ~
+        \subfigure[Case 6: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot06_1.png}
+        \label{fig:current-06-boilerflow}
+        }
+        \caption{Case 6 Results}
+      \end{figure*}
+
+    \section{Case 7}\label{sec:current-07}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 7: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot07_0.png}
+        \label{fig:current-07-boilerrate}
+        }
+        ~
+        \subfigure[Case 7: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot07_1.png}
+        \label{fig:current-07-boilerflow}
+        }
+        \caption{Case 7 Results}
+      \end{figure*}
+
+    \section{Case 8}\label{sec:current-08}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 8: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot08_0.png}
+        \label{fig:current-08-boilerrate}
+        }
+        ~
+        \subfigure[Case 8: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot08_1.png}
+        \label{fig:current-08-boilerflow}
+        }
+        \caption{Case 8 Results}
+      \end{figure*}
+
+    \section{Case 9}\label{sec:current-09}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 9: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot09_0.png}
+        \label{fig:current-09-boilerrate}
+        }
+        ~
+        \subfigure[Case 9: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot09_1.png}
+        \label{fig:current-09-boilerflow}
+        }
+        \caption{Case 9 Results}
+      \end{figure*}
+
+    \section{Case 10}\label{sec:current-10}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 10: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot10_0.png}
+        \label{fig:current-10-boilerrate}
+        }
+        ~
+        \subfigure[Case 01: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot10_1.png}
+        \label{fig:current-10-boilerflow}
+        }
+        \caption{Case 10 Results}
+      \end{figure*}
+
+    \section{Case 11}\label{sec:current-11}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 11: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot11_0.png}
+        \label{fig:current-11-boilerrate}
+        }
+        ~
+        \subfigure[Case 11: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot11_1.png}
+        \label{fig:current-11-boilerflow}
+        }
+        \caption{Case 11 Results}
+      \end{figure*}
+
+    \section{Case 12}\label{sec:current-12}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 12: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot12_0.png}
+        \label{fig:current-12-boilerrate}
+        }
+        ~
+        \subfigure[Case 12: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot12_1.png}
+        \label{fig:current-12-boilerflow}
+        }
+        \caption{Case 12 Results}
+      \end{figure*}
+
+    \section{Case 13}\label{sec:current-13}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 13: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot13_0.png}
+        \label{fig:current-13-boilerrate}
+        }
+        ~
+        \subfigure[Case 13: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot13_1.png}
+        \label{fig:current-13-boilerflow}
+        }
+        \caption{Case 13 Results}
+      \end{figure*}
+
+    \section{Case 14}\label{sec:current-14}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 14: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot14_0.png}
+        \label{fig:current-14-boilerrate}
+        }
+        ~
+        \subfigure[Case 14: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot14_1.png}
+        \label{fig:current-14-boilerflow}
+        }
+        \caption{Case 14 Results}
+      \end{figure*}
+
+    \section{Case 15}\label{sec:current-15}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 15: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot15_0.png}
+        \label{fig:current-15-boilerrate}
+        }
+        ~
+        \subfigure[Case 15: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot15_1.png}
+        \label{fig:current-15-boilerflow}
+        }
+        \caption{Case 15 Results}
+      \end{figure*}
+
+    \section{Case 16}\label{sec:current-16}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 16: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot16_0.png}
+        \label{fig:current-16-boilerrate}
+        }
+        ~
+        \subfigure[Case 16: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot16_1.png}
+        \label{fig:current-16-boilerflow}
+        }
+        \caption{Case 16 Results}
+      \end{figure*}
+
+    \section{Case 17}\label{sec:current-17}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 17: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot17_0.png}
+        \label{fig:current-17-boilerrate}
+        }
+        ~
+        \subfigure[Case 17: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot17_1.png}
+        \label{fig:current-17-boilerflow}
+        }
+        \caption{Case 17 Results}
+      \end{figure*}
+
+    \section{Case 18}\label{sec:current-18}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 18: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot18_0.png}
+        \label{fig:current-18-boilerrate}
+        }
+        ~
+        \subfigure[Case 18: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot18_1.png}
+        \label{fig:current-18-boilerflow}
+        }
+        \caption{Case 18 Results}
+      \end{figure*}
+
+    \section{Case 19}\label{sec:current-19}
+
+      INSERT DESCRIPTION
+
+      \begin{figure*}[hbt]
+        \centering
+        \subfigure[Case 19: Boiler Heating Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot19_0.png}
+        \label{fig:current-19-boilerrate}
+        }
+        ~
+        \subfigure[Case 19: Boiler Flow Rate]{
+        \includegraphics[width=0.47\textwidth]{media/plot19_1.png}
+        \label{fig:current-19-boilerflow}
+        }
+        \caption{Case 19 Results}
+      \end{figure*}
+
+  \chapter{Modeling Enhancements}\label{ch:enhancements}
+
+    Gonna do stuff
+
+    Gonna fix pumps
+
+    Gonna do some refactoring
+
+    Gonna write some tests
+
+  \chapter{Updated Results}\label{ch:newresults}
+
+    Look it worked
+
+  \chapter{Conclusions}\label{ch:conclusions}
+
+    Here's what we learned
+
 \end{document}

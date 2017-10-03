@@ -16,7 +16,7 @@ Metrics/LineLength:
 
 Metrics/MethodLength:
   CountComments: false  # count full line comments?
-  Max: 35
+  Max: 40
 
 # these need to be re-enabled and the code cleaned up
 
@@ -27,4 +27,7 @@ Metrics/CyclomaticComplexity:
   Enabled: false
 
 Metrics/PerceivedComplexity:
+  Enabled: false
+
+Metrics/BlockLength:
   Enabled: false

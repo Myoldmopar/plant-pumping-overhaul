@@ -113,6 +113,8 @@ class ModelBuilder
     @boil1.setNominalCapacity(@conf[:boiler_1_capacity])
     @boil2 = OpenStudio::Model::BoilerHotWater.new(@model)
     @boil2.setNominalCapacity(@conf[:boiler_2_capacity])
+    @boil1.setBoilerFlowMode('VariableFlow')
+    @boil2.setBoilerFlowMode('VariableFlow')
     if @conf[:primary_pump_location] == PumpPlacement::LOOP_PUMP
       @pl.addSupplyBranchForComponent(@boil1)
       @pl.addSupplyBranchForComponent(@boil2)
@@ -215,12 +217,9 @@ class ModelBuilder
     # find E+
     eplus_file_path = File.join(cur_directory, '..', 'EnergyPlus-8.8.0-7c3bbe4830-Linux-x86_64', 'EnergyPlus-8-8-0', 'energyplus')
     `ENERGYPLUS_EXE_PATH=#{eplus_file_path} openstudio run -w #{workflow_file_path}`
-    # run_a_model(conf[:output_file_name], "/home/edwin/Projects/energyplus/repos/1eplus/weather/USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw", parent_folder)
 
-    # grab some result
-    query_a_model(parent_folder, ['Boiler Heating Rate'])
-    write_description(parent_folder, @conf[:description])
-    # chart_a_column(parent_folder, ['BOILER HOT WATER 1:Boiler Mass Flow Rate'], 'massflowrate.png')
+    # grab some results
+    query_a_model(parent_folder, ['Boiler Heating Rate', 'Boiler Mass Flow Rate'])
   end
 
   def make_a_load_profile_schedule(peak_value, profile_num, load_or_flow, schedule_type)

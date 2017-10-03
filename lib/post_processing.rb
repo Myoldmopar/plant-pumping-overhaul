@@ -30,53 +30,54 @@ end
 
 def query_a_model(run_folder, variable_names)
   sql_file = "#{run_folder}/run/eplusout.sql"
-  run_key = run_folder.split('/').last
-  time_series_data = {}
-  begin
-    db = SQLite3::Database.open sql_file
-    stm = db.prepare 'SELECT * FROM ReportDataDictionary'
-    rs = stm.execute
-    db_info = []
-    rs.each do |row|
-      if variable_names.include? row[6]
-        db_info.push(DatabaseInfo.new(row[6], row[5], row[0]))
+  case_number = run_folder.split('/').last
+  variable_names.each_with_index do |this_variable, plot_index|
+    time_series_data = {}
+    begin
+      db = SQLite3::Database.open sql_file
+      stm = db.prepare 'SELECT * FROM ReportDataDictionary'
+      rs = stm.execute
+      db_info = []
+      rs.each do |row|
+        if this_variable == row[6]
+          db_info.push(DatabaseInfo.new(row[6], row[5], row[0]))
+        end
       end
-    end
-    db_info.each do |variable|
-      time_series_name = "#{variable.variable_name}:#{variable.key_name}"
-      stm_two = db.prepare "SELECT * FROM ReportData WHERE ReportDataDictionaryIndex == #{variable.data_dict_index}"
-      rs_two = stm_two.execute
-      time_series = []
-      # need to actually look in the Time table to get the correct time, for now I'm just using an index
-      cur_time = 0
-      rs_two.each do |row|
-        cur_time += 1
-        time_series.push(SingleTimePointData.new(cur_time, row[3]))
+      db_info.each do |variable|
+        time_series_name = "#{variable.variable_name}:#{variable.key_name}"
+        stm_two = db.prepare "SELECT * FROM ReportData WHERE ReportDataDictionaryIndex == #{variable.data_dict_index}"
+        rs_two = stm_two.execute
+        time_series = []
+        # need to actually look in the Time table to get the correct time, for now I'm just using an index
+        cur_time = 0.0
+        rs_two.each do |row|
+          cur_time += 0.25
+          time_series.push(SingleTimePointData.new(cur_time, row[3]))
+        end
+        time_series_data[time_series_name] = time_series
+        stm_two.close
       end
-      time_series_data[time_series_name] = time_series
-      stm_two.close
+      plot_results case_number, plot_index, this_variable, time_series_data
+    rescue SQLite3::Exception => e
+      puts 'Exception occurred'
+      puts e
+    ensure
+      stm.close if stm
+      db.close if db
     end
-  rescue SQLite3::Exception => e
-    puts 'Exception occurred'
-    puts e
-  ensure
-    stm.close if stm
-    db.close if db
   end
-  plot_results run_key, time_series_data
 end
 
-def plot_results(run_key, time_series_data)
+def plot_results(run_key, plot_index, this_variable, time_series_data)
   Gnuplot.open do |gp|
     Gnuplot::Plot.new(gp) do |plot|
       plot.terminal 'png'
       this_script_dir = File.dirname(__FILE__)
-      plot_file_path = File.join(this_script_dir, '..', 'report', 'media', "plot#{run_key}.png")
+      plot_file_path = File.join(this_script_dir, '..', 'report', 'media', "plot#{run_key}_#{plot_index}.png")
       plot.output File.expand_path(plot_file_path, __FILE__)
       # plot.xrange '[-10:10]'
-      plot.title "Run # #{run_key}"
-      plot.ylabel 'x'
-      plot.xlabel 'Boiler Heating Rate'
+      plot.ylabel this_variable
+      plot.xlabel 'Hour of Design Day'
 
       temp_data = []
       time_series_data.each do |time_series_name, time_series|
@@ -93,11 +94,4 @@ def plot_results(run_key, time_series_data)
       plot.data = temp_data
     end
   end
-end
-
-def write_description(run_folder, description)
-  run_key = run_folder.split('/').last
-  this_script_dir = File.dirname(__FILE__)
-  description_file_path = File.join(this_script_dir, '..', 'report', 'media', "description#{run_key}.tex")
-  File.open(description_file_path, 'w') { |file| file.write(description) }
 end

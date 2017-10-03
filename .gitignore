@@ -9,6 +9,8 @@ EnergyPlus-8.8.0-*
 *.blg
 *.log
 *.pdf
+*.out
+*.toc
 
 .idea
 Gemfile.lock
