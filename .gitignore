@@ -2,6 +2,7 @@
 _build
 report/media
 EnergyPlus-8.8.0-*
+installers
 
 # latex output
 *.aux

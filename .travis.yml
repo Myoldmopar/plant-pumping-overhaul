@@ -1,6 +1,8 @@
 language: ruby
 cache:
   bundler: true
+  directories:
+  - installers
 os:
 - linux
 rvm:
@@ -25,4 +27,4 @@ deploy:
   on:
     repo: Myoldmopar/plant-pumping-overhaul
     tags: true
-    condition: CHECK = build
+    condition: $CHECK = build
