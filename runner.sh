@@ -18,7 +18,7 @@ elif [ $1 == "build" ]; then
   if [ ! -e "${INSTALLDIR}/${EPLUSZIP}" ]; then
     wget -O "${INSTALLDIR}/${EPLUSZIP}" "https://github.com/NREL/EnergyPlus/releases/download/v8.8.0/${EPLUSZIP}"
   fi
-  tar -xvf "${INSTALLDIR}/${EPLUSZIP}"
+  tar -xf "${INSTALLDIR}/${EPLUSZIP}"
   bundle exec ruby lib/build_configurations.rb
   make -C report pdf
   exit $?
