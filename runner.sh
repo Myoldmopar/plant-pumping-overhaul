@@ -2,6 +2,7 @@
 
 OSDEBIAN='OpenStudio-2.2.2.ebdeaa44f8-Linux.deb'
 EPLUSZIP='EnergyPlus-8.8.0-7c3bbe4830-Linux-x86_64.tar.gz'
+UBUNTUFONTZIP='ubuntu-latex-fonts-master.zip'
 INSTALLDIR='installers'
 
 if [ $1 == "tests" ]; then
@@ -19,6 +20,11 @@ elif [ $1 == "build" ]; then
     wget -O "${INSTALLDIR}/${EPLUSZIP}" "https://github.com/NREL/EnergyPlus/releases/download/v8.8.0/${EPLUSZIP}"
   fi
   tar -xf "${INSTALLDIR}/${EPLUSZIP}"
+  if [ ! -e "${INSTALLDIR}/${UBUNTUFONTZIP}" ]; then
+    wget -O "${INSTALLDIR}/${UBUNTUFONTZIP}" "https://github.com/tzwenn/ubuntu-latex-fonts/archive/master.zip"
+  fi
+  unzip "${INSTALLDIR}/${UBUNTUFONTZIP}"
+  sudo make -C "ubuntu-latex-fonts-master" install
   bundle exec ruby lib/build_configurations.rb
   make -C report pdf
   exit $?
