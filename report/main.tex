@@ -3,6 +3,15 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{subfigure}
 \usepackage{hyperref}
+\usepackage{ubuntu}
+
+\usepackage{xcolor}
+\hypersetup{
+colorlinks,
+linkcolor={red!50!black},
+citecolor={blue!50!black},
+urlcolor={blue!80!black}
+}
 
 \title{Plant Pumping Overhaul}
 \author{Edwin Lee}
@@ -22,10 +31,93 @@
 
     \begin{itemize}
       \item Setup automated testing framework
+      \item Evaluate current modeling methodology
+      \item Generate baseline results to identify problem areas
       \item Establish requirements
       \item Design and complete initial refactoring work (no-diffs)
       \item Design and complete modifications to accomplish requirements (probably no-diffs in existing files, but additional tests to be added)
     \end{itemize}
+
+  \chapter{Modeling Methodology}\label{ch:modeling}
+
+    The current plant loop modeling methodology is essentially the following process:
+
+    \begin{itemize}
+      \item Call the plant loop manager to begin plant loop simulation
+      \item Iterate on each plant loop side based on a predetermined calling order until convergence
+      \item Within each plant loop side simulation, simulate and update all models and state variables
+    \end{itemize}
+
+    There are many subtopics that can be discussed around the plant modeling methodology.
+    Each major relevant piece of this simulation model is described in a section in this chapter:
+
+    \begin{itemize}
+      \item Solvers
+      \begin{itemize}
+        \item The high level plant loop manager is described in Section~\ref{sec:modeling-loop}
+        \item The loop side solver is described in Section~\ref{sec:modeling-halfloop}
+        \item The component level simulation is described in Section~\ref{sec:modeling-component}
+      \end{itemize}
+      \item Special Discussions
+      \begin{itemize}
+        \item Pump simulation mechanics are described in Section~\ref{sec:modeling-pumps}
+        \item Load distribution details are described in Section~\ref{sec:modeling-dispatch}
+      \end{itemize}
+    \end{itemize}
+
+    \section{Plant Loop Manager}\label{sec:modeling-loop}
+
+      The highest level of plant loop management is a function called ManagePlantLoops.
+      This function is called from the HVACManager, at two possible calling points:
+
+      \begin{itemize}
+        \item On FirstHVACIteration to reset and initialize
+        \item On every SimHVAC call to actually perform simulation
+      \end{itemize}
+
+      The primary purpose of the plant loop manager is to iterate over all plant loop sides.
+      The iteration order is predetermined based on an analysis of the interdependence present between multiple plant loops.
+      In previous versions of EnergyPlus, the order was simply based on the order found in the input file.
+      This led to inefficiencies as the interconnections between loops was not represented well in the iteration order.
+
+      The iteration process is rather straightforward:
+      \begin{itemize}
+        \item Loop over the total number of half-loops in the input deck
+        \item On each index:
+        \begin{itemize}
+          \item Look up the current topological half loop to be simulated
+          \item If that half loop has an active simulation flag, call the half loop solver (see Section~\ref{sec:modeling-halfloop})
+          \item Set the sim flag to false
+        \end{itemize}
+        \item Report back whether any plant loops need to be simulated again
+      \end{itemize}
+
+    \section{Plant Half Loop Solver}\label{sec:modeling-halfloop}
+
+      The half loop solver is responsible for simulating pumps and equipment models and controlling the loops to attempt to supply the demand being imposed on the loops.
+      The core process for simulating the half-loop is as follows:
+
+      \begin{itemize}
+        \item On the start of a new time step, the load distribution system is reinitialized, to allow for previously scheduled control strategies to be cleared and updated controls to be enabled
+        \item Establish the requested flow rate for the half-loop
+        \item Simulate pumps in order to query for currently available flow
+        \item Bound flow to restrictions such as a closed valve situation
+        \item Simulate all components with flow unlocked - components request and operate at whatever flow they want
+        \item Resolve all flow rates on the half loop
+        \item Simulate all components with flow locked - components are forced to operate at the resolved flow
+      \end{itemize}
+
+    \section{Component Simulation}\label{sec:modeling-component}
+
+      Hey
+
+    \section{Pump Simulation}\label{sec:modeling-pumps}
+
+      Hey
+
+    \section{Load Distribution Details}\label{sec:modeling-dispatch}
+
+      Hey
 
   \chapter{Current Results}\label{ch:current}
 
@@ -125,7 +217,7 @@
 
       The boiler flow rate is shown for this case in Figure~\ref{fig:current-02-boilerflow}.
       During the morning hours, when only one boiler is running, the single boiler takes the full constant pump flow, and so operates at 1.8 kg/s.
-      Note that boiler 2 comes on briefly during a pickup load period, but goes off after one time step - this is common for many of these test cases.
+      Note that boiler 2 comes on briefly during a pickup load period, but goes off after one time step - this is common for many of these test cases because there is initially no stored up pump heat from previous time steps.
       In the afternoon, when the load must be dispatched to both boilers to meet demand, the boilers split the flow, proportional to the amount of load each boiler is dispatched.
 
     \section{Case 3: Variable Speed Pumping}\label{sec:current-03}
@@ -180,9 +272,11 @@
       In this case, with the variable speed pump, the boiler can meet the demand at a lower flow rate.
       In the afternoon, when both boilers come online and the loop is approaching maximum capacity, the pump runs at full flow, and the flow is distributed to each boiler sequentially, proportional to how much demand each boiler is meeting.
 
-    \section{Case 5}\label{sec:current-05}
+    \section{Case 5: Uniform Dispatch + Constant Branch Pumps}\label{sec:current-05}
 
-      INSERT DESCRIPTION
+      This model makes a major topology change.
+      For this model, there are two supply pumps, one upstream of each boiler.
+      This adds to the complexity of the solution, and because the pumps are constant speed, the ability of the system to maintain control is compromised.
 
       \begin{figure*}[hbt]
         \centering
@@ -197,6 +291,22 @@
         }
         \caption{Case 5 Results}
       \end{figure*}
+
+      Figure~\ref{fig:current-05-boilerrate} shows the boiler heating rates for this case.
+      This reveals the first really odd set of results from the plant.
+      Keep in mind that the load is still dispatched uniformly even though there are branch pumps.
+      In the morning hours, when there is little demand, the boiler heat transfer rate is controlled well to meet the demand and stay on set point.
+      As seen in Figure~\ref{fig:current-05-boilerflow}, the flow rate goes to full flow in the morning even when there is less than peak demand.
+      This is expected based on the constant flow pumping nature.
+      However, starting in the afternoon, the entire loop is turning on and off at what appears to be every time step.
+      The underlying reason for this behavior is due to the fact that when pumps are found on the parallel branches with supply equipment, they tend to control to the needs of the supply equipment on their own branch.
+      This is in contrast to the loop-level pumps, which instead focus on providing the needs of the overall loop.
+      In this case, it appears that on each time step the supply equipment may be overshooting the needs of the loop, which causes the equipment to shut down for the next time step.
+      The root cause here could be the use of constant speed pumps.
+      When each pump turns on, it runs to full capacity, which causes the boilers to run at full flow also, which may be adding too much heat to the fluid, causing it to overshoot the set point.
+
+       shows the boiler flow rate for this case.
+      The flow rate tends to
 
     \section{Case 6}\label{sec:current-06}
 
@@ -454,11 +564,17 @@
 
     Gonna do stuff
 
-    Gonna fix pumps
+    \section{Refactoring Efforts}\label{sec:enhancements-refactor}
 
-    Gonna do some refactoring
+      Gonna do some refactoring
 
-    Gonna write some tests
+    \section{Writing Tests}\label{sec:enhancements-tests}
+
+      Gonna write some tests
+
+    \section{Modeling Enhancements}\label{sec:enhancements-fixes}
+
+      Gonna fix pumps - primarily branch pumps
 
   \chapter{Updated Results}\label{ch:newresults}
 

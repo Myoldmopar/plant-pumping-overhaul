@@ -71,7 +71,9 @@ end
 def plot_results(run_key, plot_index, this_variable, time_series_data)
   Gnuplot.open do |gp|
     Gnuplot::Plot.new(gp) do |plot|
-      plot.terminal 'png'
+      # plot.terminal 'png'
+      plot.arbitrary_lines << "set term png font \"Ubuntu,14\""
+      plot.arbitrary_lines << 'set grid'
       this_script_dir = File.dirname(__FILE__)
       plot_file_path = File.join(this_script_dir, '..', 'report', 'media', "plot#{run_key}_#{plot_index}.png")
       plot.output File.expand_path(plot_file_path, __FILE__)

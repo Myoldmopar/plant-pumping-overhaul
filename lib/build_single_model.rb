@@ -190,7 +190,7 @@ class ModelBuilder
 
   def add_output_vars
     # and add some interesting output variables too
-    var_names = ['Pump Mass Flow Rate', 'Pump Electric Power', 'Pump Fluid Heat Gain Rate', 'Plant Load Profile Mass Flow Rate', 'Plant Load Profile Heat Transfer Rate', 'Boiler Heating Rate', 'Boiler Mass Flow Rate', 'Plant Supply Side Outlet Temperature', 'Plant Common Pipe Mass Flow Rate']
+    var_names = ['Pump Mass Flow Rate', 'Pump Electric Power', 'Pump Fluid Heat Gain Rate', 'Plant Load Profile Mass Flow Rate', 'Plant Load Profile Heat Transfer Rate', 'Boiler Heating Rate', 'Boiler Mass Flow Rate', 'Plant Supply Side Outlet Temperature', 'Plant Common Pipe Mass Flow Rate', 'System Node Temperature']
     var_names.each do |var|
       var_object = OpenStudio::Model::OutputVariable.new(var, @model)
       var_object.setReportingFrequency('Timestep')
