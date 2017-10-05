@@ -15,7 +15,6 @@ env:
 install:
 - bundle install --path=vendor/bundle
 - sudo apt-get install -y --no-install-recommends gnuplot texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended gdebi
-- sudo tlmgr install xcolor
 script:
 - ./runner.sh $CHECK
 deploy:
