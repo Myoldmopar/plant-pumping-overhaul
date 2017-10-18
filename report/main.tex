@@ -110,7 +110,25 @@
 
     \section{Component Simulation}\label{sec:modeling-component}
 
-      Hey
+      Components on the plant loop are generally called in a unified manner, regardless of type, aside from pumps.
+      However, the behavior of the component simulation can vary between types, with one notable dividing line being components that tend to demand a response from the loop, and components that tend to supply this demand.
+
+      \subsection{Demand Components}\label{subsec:modeling-component-demand}
+
+        Realistic demand components such as chilled water coils, as well as virtual demand components like load profiles, are typically (but not necessarily) found on the demand side of the plant loop.
+        The behavior of such components during simulation follows a pattern as such:
+        \begin{itemize}
+          \item If needed, do input processing to fill out data structures
+          \item If sizing, perform any sizing calculations and register the design flow rate(s) with the plant
+          \item Do all simulation calculations, and call SetComponentFlowRate to request a flow rate, and then operate with the provided flow rate.
+        \end{itemize}
+
+        The underlying simulation calculations vary widely based on model type.
+
+      \subsection{Supply Components}\label{subsec:modeling-component-supply}
+
+        Supply components, such as chillers, ground heat exchangers, and cooling towers, are typically (but not necessarily) found on the supply side of the plant loop.
+
 
     \section{Pump Simulation}\label{sec:modeling-pumps}
 

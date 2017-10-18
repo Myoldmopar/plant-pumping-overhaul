@@ -74,6 +74,8 @@ def plot_results(run_key, plot_index, this_variable, time_series_data)
       # plot.terminal 'png'
       # rubocop:disable StringLiterals
       plot.arbitrary_lines << "set term png font \"Ubuntu,14\""
+      plot.arbitrary_lines << 'set auto fix'
+      plot.arbitrary_lines << 'set offsets 0, 0, graph 0.2, 0'
       # rubocop:enable StringLiterals
       plot.arbitrary_lines << 'set grid'
       this_script_dir = File.dirname(__FILE__)
