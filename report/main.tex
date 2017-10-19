@@ -20,85 +20,85 @@
 
 \begin{document}
 
-  \maketitle
+    \maketitle
 
-  \tableofcontents
+    \tableofcontents
 
-  \chapter{Introduction}\label{ch:intro}
+    \chapter{Introduction}\label{ch:intro}
 
     For FY18, NREL was tasked with completing an overhaul of plant pumping systems.
     This is primarily focused on the constant speed branch pumping capabilities, which have known issues.
     This task will be divided into the following steps:
 
     \begin{itemize}
-      \item Setup automated testing framework
-      \item Evaluate current modeling methodology
-      \item Generate baseline results to identify problem areas
-      \item Establish requirements
-      \item Design and complete initial refactoring work (no-diffs)
-      \item Design and complete modifications to accomplish requirements (probably no-diffs in existing files, but additional tests to be added)
+        \item Setup automated testing framework
+        \item Evaluate current modeling methodology
+        \item Generate baseline results to identify problem areas
+        \item Establish requirements
+        \item Design and complete initial refactoring work (no-diffs)
+        \item Design and complete modifications to accomplish requirements (probably no-diffs in existing files, but additional tests to be added)
     \end{itemize}
 
-  \chapter{Modeling Methodology}\label{ch:modeling}
+    \chapter{Modeling Methodology}\label{ch:modeling}
 
     The current plant loop modeling methodology is essentially the following process:
 
     \begin{itemize}
-      \item Call the plant loop manager to begin plant loop simulation
-      \item Iterate on each plant loop side based on a predetermined calling order until convergence
-      \item Within each plant loop side simulation, simulate and update all models and state variables
+        \item Call the plant loop manager to begin plant loop simulation
+        \item Iterate on each plant loop side based on a predetermined calling order until convergence
+        \item Within each plant loop side simulation, simulate and update all models and state variables
     \end{itemize}
 
     There are many subtopics that can be discussed around the plant modeling methodology.
     Each major relevant piece of this simulation model is described in a section in this chapter:
 
     \begin{itemize}
-      \item Solvers
-      \begin{itemize}
-        \item The high level plant loop manager is described in Section~\ref{sec:modeling-loop}
-        \item The loop side solver is described in Section~\ref{sec:modeling-halfloop}
-        \item The component level simulation is described in Section~\ref{sec:modeling-component}
-      \end{itemize}
-      \item Special Discussions
-      \begin{itemize}
-        \item Pump simulation mechanics are described in Section~\ref{sec:modeling-pumps}
-        \item Load distribution details are described in Section~\ref{sec:modeling-dispatch}
-      \end{itemize}
+        \item Solvers
+        \begin{itemize}
+            \item The high level plant loop manager is described in Section~\ref{sec:modeling-loop}
+            \item The loop side solver is described in Section~\ref{sec:modeling-halfloop}
+            \item The component level simulation is described in Section~\ref{sec:modeling-component}
+        \end{itemize}
+        \item Special Discussions
+        \begin{itemize}
+            \item Pump simulation mechanics are described in Section~\ref{sec:modeling-pumps}
+            \item Load distribution details are described in Section~\ref{sec:modeling-dispatch}
+        \end{itemize}
     \end{itemize}
 
     \section{Plant Loop Manager}\label{sec:modeling-loop}
 
-      The highest level of plant loop management is a function called ManagePlantLoops.
-      This function is called from the HVACManager, at two possible calling points:
+    The highest level of plant loop management is a function called ManagePlantLoops.
+    This function is called from the HVACManager, at two possible calling points:
 
-      \begin{itemize}
+    \begin{itemize}
         \item On FirstHVACIteration to reset and initialize
         \item On every SimHVAC call to actually perform simulation
-      \end{itemize}
+    \end{itemize}
 
-      The primary purpose of the plant loop manager is to iterate over all plant loop sides.
-      The iteration order is predetermined based on an analysis of the interdependence present between multiple plant loops.
-      In previous versions of EnergyPlus, the order was simply based on the order found in the input file.
-      This led to inefficiencies as the interconnections between loops was not represented well in the iteration order.
+    The primary purpose of the plant loop manager is to iterate over all plant loop sides.
+    The iteration order is predetermined based on an analysis of the interdependence present between multiple plant loops.
+    In previous versions of EnergyPlus, the order was simply based on the order found in the input file.
+    This led to inefficiencies as the interconnections between loops was not represented well in the iteration order.
 
-      The iteration process is rather straightforward:
-      \begin{itemize}
+    The iteration process is rather straightforward:
+    \begin{itemize}
         \item Loop over the total number of half-loops in the input deck
         \item On each index:
         \begin{itemize}
-          \item Look up the current topological half loop to be simulated
-          \item If that half loop has an active simulation flag, call the half loop solver (see Section~\ref{sec:modeling-halfloop})
-          \item Set the sim flag to false
+            \item Look up the current topological half loop to be simulated
+            \item If that half loop has an active simulation flag, call the half loop solver (see Section~\ref{sec:modeling-halfloop})
+            \item Set the sim flag to false
         \end{itemize}
         \item Report back whether any plant loops need to be simulated again
-      \end{itemize}
+    \end{itemize}
 
     \section{Plant Half Loop Solver}\label{sec:modeling-halfloop}
 
-      The half loop solver is responsible for simulating pumps and equipment models and controlling the loops to attempt to supply the demand being imposed on the loops.
-      The core process for simulating the half-loop is as follows:
+    The half loop solver is responsible for simulating pumps and equipment models and controlling the loops to attempt to supply the demand being imposed on the loops.
+    The core process for simulating the half-loop is as follows:
 
-      \begin{itemize}
+    \begin{itemize}
         \item On the start of a new time step, the load distribution system is reinitialized, to allow for previously scheduled control strategies to be cleared and updated controls to be enabled
         \item Establish the requested flow rate for the half-loop
         \item Simulate pumps in order to query for currently available flow
@@ -106,39 +106,71 @@
         \item Simulate all components with flow unlocked - components request and operate at whatever flow they want
         \item Resolve all flow rates on the half loop
         \item Simulate all components with flow locked - components are forced to operate at the resolved flow
-      \end{itemize}
+    \end{itemize}
 
     \section{Component Simulation}\label{sec:modeling-component}
 
-      Components on the plant loop are generally called in a unified manner, regardless of type, aside from pumps.
-      However, the behavior of the component simulation can vary between types, with one notable dividing line being components that tend to demand a response from the loop, and components that tend to supply this demand.
+    Components on the plant loop are generally called in a unified manner, regardless of type, aside from pumps.
+    However, the behavior of the component simulation can vary between types, with one notable dividing line being components that tend to demand a response from the loop, and components that tend to supply this demand.
+    Realistic demand components such as chilled water coils, as well as virtual demand components like load profiles, are typically (but not necessarily) found on the demand side of the plant loop.
+    Supply components, such as chillers, ground heat exchangers, and cooling towers, are typically (but not necessarily) found on the supply side of the plant loop.
+    The behavior of such components during simulation follows a pattern as such:
+    \begin{itemize}
+        \item If needed, do input processing to fill out data structures
+        \item If sizing, perform any sizing calculations and register the design flow rate(s) with the plant
+        \item Do all simulation calculations, and call SetComponentFlowRate to request a flow rate, and then operate with the provided flow rate
+    \end{itemize}
 
-      \subsection{Demand Components}\label{subsec:modeling-component-demand}
+    \section{Flow Distribution and Pump Simulation}\label{sec:modeling-flow}
 
-        Realistic demand components such as chilled water coils, as well as virtual demand components like load profiles, are typically (but not necessarily) found on the demand side of the plant loop.
-        The behavior of such components during simulation follows a pattern as such:
-        \begin{itemize}
-          \item If needed, do input processing to fill out data structures
-          \item If sizing, perform any sizing calculations and register the design flow rate(s) with the plant
-          \item Do all simulation calculations, and call SetComponentFlowRate to request a flow rate, and then operate with the provided flow rate.
-        \end{itemize}
+    Flow distribution in the plant is not calculated using a detailed pressure network.
+    Instead, thermal load distribution, component type, and control logic are used to dispatch flow.
+    Ultimately, the pumps dictate the available flow on the loop, and as such they are treated especially within the simulation.
+    The first step in flow distribution in the plant is determining the total loop flow rate, which is described in these steps:
 
-        The underlying simulation calculations vary widely based on model type.
+    \begin{itemize}
+        \item Upon starting a new simulation step for a plant half loop, the loop flow request is calculated.
+              This is based on many things, and will be described in Section~\ref{subsec:modeling-flow-request}.
+              Ultimately the result of the function is a single value to be used as the total flow rate request for this loop side.
+        \item The second step is actually simulating the pumps themselves, in a tentative manner.
+              The idea behind this step is to figure out how much flow is actually available in the current time step.
+              Each pump is simulated with as unconstrained of a state as possible to find the maximum, and minimum if the pump is forced on, flow rate available.
+        \item With all pumps simulated, the current loop flow rate request is bound to within the available pumping range.
+        \item The current loop flow rate request is then bound to the loop side inlet minimum and maximum available conditions.
+              The idea behind this is that the minimum and maximum available conditions could be due to a flow restriction on the other side of the loop, where the pump is oversized.
+              This step is done late so that the flow rate is constrained to this to avoid mass flow mismatch problems.
+    \end{itemize}
 
-      \subsection{Supply Components}\label{subsec:modeling-component-supply}
+    With a total loop flow rate calculated, the individual components are simulated.
+    The components are simulated in a mostly unconstrained space to allow the components to lodge flow requests to the plant.
+    For flow rate specification, component models are required to interface with the plant using a single function, called SetComponentFlowRate.
+    During this unconstrained stage, the function will return the full component request, unless it is out of range for the entire plant flow availability.
 
-        Supply components, such as chillers, ground heat exchangers, and cooling towers, are typically (but not necessarily) found on the supply side of the plant loop.
+    Once all components have lodged requests, the flow resolver is called to actually distribute the flow to the components.
+    The flow resolver is a complex set of logic, and is described in Section~\ref{subsec:modeling-flow-resolver}
+    Ultimately, the result of the flow resolver is that all flow rates around the entire loop side topology have been fully specified, with continuity maintained throughout the loop side.
 
+    The components are then simulated again.
+    The same simulation interface is called, and the components again use the SetComponentFlowRate interface to request flow from the plant.
+    The components do not know what the function will return, and in this case, the function returns the resolved, fully specified flow for that component.
+    The component must operate at this flow rate and attempt to control to meet the demand specified for it.
 
-    \section{Pump Simulation}\label{sec:modeling-pumps}
+        \subsection{Set up Loop Flow Request}\label{subsec:modeling-flow-request}
+            Hey
 
-      Hey
+        \subsection{Flow Resolution}\label{subsec:modeling-flow-resolver}
+            Hey
+
+        \subsection{Pressure-Based Flow Resolution}\label{subsec:modeling-flow-pressure}
+            Small detour.
 
     \section{Load Distribution Details}\label{sec:modeling-dispatch}
 
-      Hey
+    Loop setpoint versus component setpoint.
+    Load calculation?
 
-  \chapter{Current Results}\label{ch:current}
+
+    \chapter{Current Results}\label{ch:current}
 
     In this chapter, results of the current EnergyPlus plant simulation will be demonstrated.
     The results are generated from a locally installed version of EnergyPlus-8.8.0-7c3bbe4830.
@@ -147,30 +179,30 @@
 
     In all examples, the plant loop consists of:
     \begin{itemize}
-      \item Two load profiles on the demand side, one per parallel branch
-      \item Two variable flow boilers on the supply side, one per parallel branch
-      \item Some form of load profile scheduling:
-      \begin{description}
-        \item [Constant] On at peak value all the time
-        \item [On During Day] On at peak value during the daytime (work) hours, and off during the night
-        \item [On During Night] Off during the daytime (work) hours, and on at peak value during the night
-        \item [On During Afternoon] On during the afternoon hours, off otherwise
-        \item [On During Morning] On during the morning hours, off otherwise
-      \end{description}
-      \item Some form of piping network, with either a single path (no common pipe), or a common pipe (uncontrolled or controlled)
-      \item Some form of pumping on each loop side
-      \begin{itemize}
-        \item With no common pipe, the demand side will have no pumping
-        \item The pumping may be constant speed or variable speed (which is more like constant flow or variable flow)
-        \item The loop side may have a single pump on the inlet branch, or branch pumps ahead of each piece of equipment
-      \end{itemize}
-      \item Other miscellaneous loop configuration and control properties can be altered:
-      \begin{itemize}
-        \item Loop temperature set points
-        \item Peak flow rates and loads for load profiles
-        \item Design flow rates and heating capacities for boilers
-        \item Pump control strategies: intermittent or continuous
-      \end{itemize}
+        \item Two load profiles on the demand side, one per parallel branch
+        \item Two variable flow boilers on the supply side, one per parallel branch
+        \item Some form of load profile scheduling:
+        \begin{description}
+            \item [Constant] On at peak value all the time
+            \item [On During Day] On at peak value during the daytime (work) hours, and off during the night
+            \item [On During Night] Off during the daytime (work) hours, and on at peak value during the night
+            \item [On During Afternoon] On during the afternoon hours, off otherwise
+            \item [On During Morning] On during the morning hours, off otherwise
+        \end{description}
+        \item Some form of piping network, with either a single path (no common pipe), or a common pipe (uncontrolled or controlled)
+        \item Some form of pumping on each loop side
+        \begin{itemize}
+            \item With no common pipe, the demand side will have no pumping
+            \item The pumping may be constant speed or variable speed (which is more like constant flow or variable flow)
+            \item The loop side may have a single pump on the inlet branch, or branch pumps ahead of each piece of equipment
+        \end{itemize}
+        \item Other miscellaneous loop configuration and control properties can be altered:
+        \begin{itemize}
+            \item Loop temperature set points
+            \item Peak flow rates and loads for load profiles
+            \item Design flow rates and heating capacities for boilers
+            \item Pump control strategies: intermittent or continuous
+        \end{itemize}
     \end{itemize}
 
     Section~\ref{sec:current-01} describes the default, initial, case in detail.
@@ -178,44 +210,44 @@
 
     \section{Case 1: Base Case}\label{sec:current-01}
 
-      This base model has no common pipe.
-      This case uses a constant speed loop pump on the supply side, under intermittent control, with a rated flow rate of 0.0018 kg/s.
-      The two boilers on the supply side provide heating, with load dispatched uniformly, each with a rated capacity of 5000 W.
-      The two load profiles on the demand side impose a heating demand on the loop, with one loaded during the afternoon, and one all day.
-      The load profiles each have a peak flow request of 0.001 kg/s and a peak demand of 4500 W.
+    This base model has no common pipe.
+    This case uses a constant speed loop pump on the supply side, under intermittent control, with a rated flow rate of 0.0018 kg/s.
+    The two boilers on the supply side provide heating, with load dispatched uniformly, each with a rated capacity of 5000 W.
+    The two load profiles on the demand side impose a heating demand on the loop, with one loaded during the afternoon, and one all day.
+    The load profiles each have a peak flow request of 0.001 kg/s and a peak demand of 4500 W.
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 1: Boiler Heating Rate]{
-          \includegraphics[width=0.47\textwidth]{media/plot01_0.png}
-          \label{fig:current-01-boilerrate}
+        \includegraphics[width=0.47\textwidth]{media/plot01_0.png}
+        \label{fig:current-01-boilerrate}
         }
         ~
         \subfigure[Case 1: Boiler Flow Rate]{
-          \includegraphics[width=0.47\textwidth]{media/plot01_1.png}
-          \label{fig:current-01-boilerflow}
+        \includegraphics[width=0.47\textwidth]{media/plot01_1.png}
+        \label{fig:current-01-boilerflow}
         }
         \caption{Case 1 Results}
-      \end{figure*}
+    \end{figure*}
 
-      The boiler heating rate is shown for this case in Figure~\ref{fig:current-01-boilerrate}.
-      In the early morning, there is no load, so the boilers do not run.
-      In the late morning, one load profile comes online, taking heat from the loop, at a rate of approximately 4500 W.
-      Because the boilers are loaded uniformly, both boilers come online and operate at a rate of approximately 2100 W.
-      The remainder of the demand is supplied through the heat gain from the pumps.
-      At midday, the second load profile comes online, and both boilers ramp up to approximately 4300 W.
-      And of course, in the evening, when the load profiles go offline, the boilers also go offline.
+    The boiler heating rate is shown for this case in Figure~\ref{fig:current-01-boilerrate}.
+    In the early morning, there is no load, so the boilers do not run.
+    In the late morning, one load profile comes online, taking heat from the loop, at a rate of approximately 4500 W.
+    Because the boilers are loaded uniformly, both boilers come online and operate at a rate of approximately 2100 W.
+    The remainder of the demand is supplied through the heat gain from the pumps.
+    At midday, the second load profile comes online, and both boilers ramp up to approximately 4300 W.
+    And of course, in the evening, when the load profiles go offline, the boilers also go offline.
 
-      The boiler flow rate is shown for this case in Figure~\ref{fig:current-01-boilerflow}.
-      Even though the boilers are variable flow, the pump is constant, so the pump is (unless there is a flow restriction) either going to be on full, or off, nothing in between.
-      Since the boilers are dispatched uniformly, they both turn on so each divides the full constant pump flow between themselves.
+    The boiler flow rate is shown for this case in Figure~\ref{fig:current-01-boilerflow}.
+    Even though the boilers are variable flow, the pump is constant, so the pump is (unless there is a flow restriction) either going to be on full, or off, nothing in between.
+    Since the boilers are dispatched uniformly, they both turn on so each divides the full constant pump flow between themselves.
 
     \section{Case 2: Sequential Load Dispatch}\label{sec:current-02}
 
-      This model builds on the base model by changing the load dispatch to the boilers to be sequential.
-      The expected result being that boiler 1 will supply heating alone until it reaches maximum capacity, then boiler 2 activates to supply heating.
+    This model builds on the base model by changing the load dispatch to the boilers to be sequential.
+    The expected result being that boiler 1 will supply heating alone until it reaches maximum capacity, then boiler 2 activates to supply heating.
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 2: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot02_0.png}
@@ -227,25 +259,25 @@
         \label{fig:current-02-boilerflow}
         }
         \caption{Case 2 Results}
-      \end{figure*}
+    \end{figure*}
 
-      The boiler heating rate for this case is shown in Figure~\ref{fig:current-02-boilerrate}.
-      In the late morning, when the first load profile comes online, boiler 1 turns on to meet the approximately 4100 W heating demand (with the pump heat supplying the remainder).
-      At midday, when the second load profile comes online, boiler 1 ramps to full capacity, and begins meeting 5000 W of heating demand.
-      The remainder is sequentially delivered to the second boiler, which meets the approximately 3600 W of remaining demand.
+    The boiler heating rate for this case is shown in Figure~\ref{fig:current-02-boilerrate}.
+    In the late morning, when the first load profile comes online, boiler 1 turns on to meet the approximately 4100 W heating demand (with the pump heat supplying the remainder).
+    At midday, when the second load profile comes online, boiler 1 ramps to full capacity, and begins meeting 5000 W of heating demand.
+    The remainder is sequentially delivered to the second boiler, which meets the approximately 3600 W of remaining demand.
 
-      The boiler flow rate is shown for this case in Figure~\ref{fig:current-02-boilerflow}.
-      During the morning hours, when only one boiler is running, the single boiler takes the full constant pump flow, and so operates at 1.8 kg/s.
-      Note that boiler 2 comes on briefly during a pickup load period, but goes off after one time step - this is common for many of these test cases because there is initially no stored up pump heat from previous time steps.
-      In the afternoon, when the load must be dispatched to both boilers to meet demand, the boilers split the flow, proportional to the amount of load each boiler is dispatched.
+    The boiler flow rate is shown for this case in Figure~\ref{fig:current-02-boilerflow}.
+    During the morning hours, when only one boiler is running, the single boiler takes the full constant pump flow, and so operates at 1.8 kg/s.
+    Note that boiler 2 comes on briefly during a pickup load period, but goes off after one time step - this is common for many of these test cases because there is initially no stored up pump heat from previous time steps.
+    In the afternoon, when the load must be dispatched to both boilers to meet demand, the boilers split the flow, proportional to the amount of load each boiler is dispatched.
 
     \section{Case 3: Variable Speed Pumping}\label{sec:current-03}
 
-      This model builds on the base model by using a variable speed pump.
-      The boilers are, as in the base case, dispatched uniformly.
-      In this case, the boilers variable nature will be exercised by matching up with a variable speed plant pumping system.
+    This model builds on the base model by using a variable speed pump.
+    The boilers are, as in the base case, dispatched uniformly.
+    In this case, the boilers variable nature will be exercised by matching up with a variable speed plant pumping system.
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 3: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot03_0.png}
@@ -257,21 +289,21 @@
         \label{fig:current-03-boilerflow}
         }
         \caption{Case 3 Results}
-      \end{figure*}
+    \end{figure*}
 
-      The boiler heating rate for this case is shown in Figure~\ref{fig:current-03-boilerrate}.
-      This has essentially the same response as the base case, as the load is dispatched fully and uniformly between the two boilers.
+    The boiler heating rate for this case is shown in Figure~\ref{fig:current-03-boilerrate}.
+    This has essentially the same response as the base case, as the load is dispatched fully and uniformly between the two boilers.
 
-      The boiler flow rate for this case is shown in Figure~\ref{fig:current-03-boilerflow}.
-      In the base case, the pump rate at full design flow throughout the day.
-      In this case, in the morning when the load is lower, the boilers both operate by requesting a reduced flow rate.
-      The pump responds by throttling down to this reduced overall flow rate.
+    The boiler flow rate for this case is shown in Figure~\ref{fig:current-03-boilerflow}.
+    In the base case, the pump rate at full design flow throughout the day.
+    In this case, in the morning when the load is lower, the boilers both operate by requesting a reduced flow rate.
+    The pump responds by throttling down to this reduced overall flow rate.
 
     \section{Case 4: Sequential Load Dispatch + Variable Speed Pumping}\label{sec:current-04}
 
-      This model combines the variations from cases 2 and 3, with load being dispatched sequentially to each boiler and variable speed pumping.
+    This model combines the variations from cases 2 and 3, with load being dispatched sequentially to each boiler and variable speed pumping.
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 4: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot04_0.png}
@@ -283,21 +315,21 @@
         \label{fig:current-04-boilerflow}
         }
         \caption{Case 4 Results}
-      \end{figure*}
+    \end{figure*}
 
-      The boiler heating rate for this case is shown in Figure~\ref{fig:current-04-boilerrate}, and is essentially equal to case 2, as the change to variable speed does not affect the load distribution in this case.
-      The boiler flow rate for this case is shown in Figure~\ref{fig:current-04-boilerflow}.
-      In case 2, with a constant speed pump, even though the load was dispatched sequentially, when boiler 1 came online to meet demand, it was forced to run at full pump design flow.
-      In this case, with the variable speed pump, the boiler can meet the demand at a lower flow rate.
-      In the afternoon, when both boilers come online and the loop is approaching maximum capacity, the pump runs at full flow, and the flow is distributed to each boiler sequentially, proportional to how much demand each boiler is meeting.
+    The boiler heating rate for this case is shown in Figure~\ref{fig:current-04-boilerrate}, and is essentially equal to case 2, as the change to variable speed does not affect the load distribution in this case.
+    The boiler flow rate for this case is shown in Figure~\ref{fig:current-04-boilerflow}.
+    In case 2, with a constant speed pump, even though the load was dispatched sequentially, when boiler 1 came online to meet demand, it was forced to run at full pump design flow.
+    In this case, with the variable speed pump, the boiler can meet the demand at a lower flow rate.
+    In the afternoon, when both boilers come online and the loop is approaching maximum capacity, the pump runs at full flow, and the flow is distributed to each boiler sequentially, proportional to how much demand each boiler is meeting.
 
     \section{Case 5: Uniform Dispatch + Constant Branch Pumps}\label{sec:current-05}
 
-      This model makes a major topology change.
-      For this model, there are two supply pumps, one upstream of each boiler.
-      This adds to the complexity of the solution, and because the pumps are constant speed, the ability of the system to maintain control is compromised.
+    This model makes a major topology change.
+    For this model, there are two supply pumps, one upstream of each boiler.
+    This adds to the complexity of the solution, and because the pumps are constant speed, the ability of the system to maintain control is compromised.
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 5: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot05_0.png}
@@ -309,29 +341,29 @@
         \label{fig:current-05-boilerflow}
         }
         \caption{Case 5 Results}
-      \end{figure*}
+    \end{figure*}
 
-      Figure~\ref{fig:current-05-boilerrate} shows the boiler heating rates for this case.
-      This reveals the first really odd set of results from the plant.
-      Keep in mind that the load is still dispatched uniformly even though there are branch pumps.
-      In the morning hours, when there is little demand, the boiler heat transfer rate is controlled well to meet the demand and stay on set point.
-      As seen in Figure~\ref{fig:current-05-boilerflow}, the flow rate goes to full flow in the morning even when there is less than peak demand.
-      This is expected based on the constant flow pumping nature.
-      However, starting in the afternoon, the entire loop is turning on and off at what appears to be every time step.
-      The underlying reason for this behavior is due to the fact that when pumps are found on the parallel branches with supply equipment, they tend to control to the needs of the supply equipment on their own branch.
-      This is in contrast to the loop-level pumps, which instead focus on providing the needs of the overall loop.
-      In this case, it appears that on each time step the supply equipment may be overshooting the needs of the loop, which causes the equipment to shut down for the next time step.
-      The root cause here could be the use of constant speed pumps.
-      When each pump turns on, it runs to full capacity, which causes the boilers to run at full flow also, which may be adding too much heat to the fluid, causing it to overshoot the set point.
+    Figure~\ref{fig:current-05-boilerrate} shows the boiler heating rates for this case.
+    This reveals the first really odd set of results from the plant.
+    Keep in mind that the load is still dispatched uniformly even though there are branch pumps.
+    In the morning hours, when there is little demand, the boiler heat transfer rate is controlled well to meet the demand and stay on set point.
+    As seen in Figure~\ref{fig:current-05-boilerflow}, the flow rate goes to full flow in the morning even when there is less than peak demand.
+    This is expected based on the constant flow pumping nature.
+    However, starting in the afternoon, the entire loop is turning on and off at what appears to be every time step.
+    The underlying reason for this behavior is due to the fact that when pumps are found on the parallel branches with supply equipment, they tend to control to the needs of the supply equipment on their own branch.
+    This is in contrast to the loop-level pumps, which instead focus on providing the needs of the overall loop.
+    In this case, it appears that on each time step the supply equipment may be overshooting the needs of the loop, which causes the equipment to shut down for the next time step.
+    The root cause here could be the use of constant speed pumps.
+    When each pump turns on, it runs to full capacity, which causes the boilers to run at full flow also, which may be adding too much heat to the fluid, causing it to overshoot the set point.
 
-       shows the boiler flow rate for this case.
-      The flow rate tends to
+    shows the boiler flow rate for this case.
+    The flow rate tends to
 
     \section{Case 6}\label{sec:current-06}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 6: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot06_0.png}
@@ -343,13 +375,13 @@
         \label{fig:current-06-boilerflow}
         }
         \caption{Case 6 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 7}\label{sec:current-07}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 7: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot07_0.png}
@@ -361,13 +393,13 @@
         \label{fig:current-07-boilerflow}
         }
         \caption{Case 7 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 8}\label{sec:current-08}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 8: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot08_0.png}
@@ -379,13 +411,13 @@
         \label{fig:current-08-boilerflow}
         }
         \caption{Case 8 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 9}\label{sec:current-09}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 9: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot09_0.png}
@@ -397,13 +429,13 @@
         \label{fig:current-09-boilerflow}
         }
         \caption{Case 9 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 10}\label{sec:current-10}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 10: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot10_0.png}
@@ -415,13 +447,13 @@
         \label{fig:current-10-boilerflow}
         }
         \caption{Case 10 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 11}\label{sec:current-11}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 11: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot11_0.png}
@@ -433,13 +465,13 @@
         \label{fig:current-11-boilerflow}
         }
         \caption{Case 11 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 12}\label{sec:current-12}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 12: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot12_0.png}
@@ -451,13 +483,13 @@
         \label{fig:current-12-boilerflow}
         }
         \caption{Case 12 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 13}\label{sec:current-13}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 13: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot13_0.png}
@@ -469,13 +501,13 @@
         \label{fig:current-13-boilerflow}
         }
         \caption{Case 13 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 14}\label{sec:current-14}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 14: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot14_0.png}
@@ -487,13 +519,13 @@
         \label{fig:current-14-boilerflow}
         }
         \caption{Case 14 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 15}\label{sec:current-15}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 15: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot15_0.png}
@@ -505,13 +537,13 @@
         \label{fig:current-15-boilerflow}
         }
         \caption{Case 15 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 16}\label{sec:current-16}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 16: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot16_0.png}
@@ -523,13 +555,13 @@
         \label{fig:current-16-boilerflow}
         }
         \caption{Case 16 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 17}\label{sec:current-17}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 17: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot17_0.png}
@@ -541,13 +573,13 @@
         \label{fig:current-17-boilerflow}
         }
         \caption{Case 17 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 18}\label{sec:current-18}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 18: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot18_0.png}
@@ -559,13 +591,13 @@
         \label{fig:current-18-boilerflow}
         }
         \caption{Case 18 Results}
-      \end{figure*}
+    \end{figure*}
 
     \section{Case 19}\label{sec:current-19}
 
-      INSERT DESCRIPTION
+    INSERT DESCRIPTION
 
-      \begin{figure*}[hbt]
+    \begin{figure*}[hbt]
         \centering
         \subfigure[Case 19: Boiler Heating Rate]{
         \includegraphics[width=0.47\textwidth]{media/plot19_0.png}
@@ -577,29 +609,29 @@
         \label{fig:current-19-boilerflow}
         }
         \caption{Case 19 Results}
-      \end{figure*}
+    \end{figure*}
 
-  \chapter{Modeling Enhancements}\label{ch:enhancements}
+    \chapter{Modeling Enhancements}\label{ch:enhancements}
 
     Gonna do stuff
 
     \section{Refactoring Efforts}\label{sec:enhancements-refactor}
 
-      Gonna do some refactoring
+    Gonna do some refactoring
 
     \section{Writing Tests}\label{sec:enhancements-tests}
 
-      Gonna write some tests
+    Gonna write some tests
 
     \section{Modeling Enhancements}\label{sec:enhancements-fixes}
 
-      Gonna fix pumps - primarily branch pumps
+    Gonna fix pumps - primarily branch pumps
 
-  \chapter{Updated Results}\label{ch:newresults}
+    \chapter{Updated Results}\label{ch:newresults}
 
     Look it worked
 
-  \chapter{Conclusions}\label{ch:conclusions}
+    \chapter{Conclusions}\label{ch:conclusions}
 
     Here's what we learned
 
